@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Ações com Agente IA</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .chart-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            backdrop-filter: blur(10px);
+            height: 500px;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 400px;
+            width: 100%;
+        }
+
+        .ai-panel {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .status-bar {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: rgba(0,123,255,0.1);
+            border-radius: 8px;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #28a745;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .current-price {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #007bff;
+        }
+
+        .price-change {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        .positive { 
+            background: #d4edda; 
+            color: #155724; 
+        }
+
+        .negative { 
+            background: #f8d7da; 
+            color: #721c24; 
+        }
+
+        .ai-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .ai-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #FF6B6B, #4ECDC4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .ai-analysis {
+            flex: 1;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .analysis-item {
+            margin-bottom: 15px;
+            padding: 15px;
+            border-radius: 10px;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .trend-analysis {
+            background: linear-gradient(135deg, #E3F2FD, #BBDEFB);
+            border-left: 4px solid #2196F3;
+        }
+
+        .recommendation {
+            background: linear-gradient(135deg, #F3E5F5, #E1BEE7);
+            border-left: 4px solid #9C27B0;
+        }
+
+        .risk-assessment {
+            background: linear-gradient(135deg, #FFF3E0, #FFE0B2);
+            border-left: 4px solid #FF9800;
+        }
+
+        .analysis-title {
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .analysis-text {
+            line-height: 1.6;
+            color: #666;
+        }
+
+        .controls {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        .control-group {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        select, button {
+            padding: 10px 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 14px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        select:focus, button:hover {
+            border-color: #007bff;
+            outline: none;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,123,255,0.2);
+        }
+
+        button {
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+            border: none;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background: linear-gradient(135deg, #0056b3, #004085);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #007bff;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+            
+            .control-group {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📈 Dashboard de Ações com IA</h1>
+            <p>Análise em tempo real com inteligência artificial</p>
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <label>Ação:</label>
+                <select id="stockSelect">
+                    <option value="AAPL">Apple (AAPL)</option>
+                    <option value="GOOGL">Google (GOOGL)</option>
+                    <option value="MSFT">Microsoft (MSFT)</option>
+                    <option value="TSLA">Tesla (TSLA)</option>
+                    <option value="AMZN">Amazon (AMZN)</option>
+                </select>
+                <button onclick="toggleAutoUpdate()">
+                    <span id="autoUpdateText">⏸️ Pausar Auto-Update</span>
+                </button>
+                <button onclick="manualUpdate()">🔄 Atualizar Agora</button>
+            </div>
+        </div>
+
+        <div class="dashboard">
+            <div class="chart-container">
+                <div class="status-bar">
+                    <div class="status-indicator">
+                        <div class="dot"></div>
+                        <span>Atualizando a cada 30s</span>
+                    </div>
+                    <div>
+                        <span class="current-price" id="currentPrice">$0.00</span>
+                        <span class="price-change" id="priceChange">+0.00%</span>
+                    </div>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="stockChart"></canvas>
+                </div>
+            </div>
+
+            <div class="ai-panel">
+                <div class="ai-header">
+                    <div class="ai-avatar">AI</div>
+                    <div>
+                        <h3>Agente de Análise Financeira</h3>
+                        <small>Última análise: <span id="lastAnalysis">--</span></small>
+                    </div>
+                </div>
+                
+                <div class="ai-analysis" id="aiAnalysis">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        Aguardando dados para análise...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuração global
+        let chart;
+        let stockData = [];
+        let aiAgent;
+        let autoUpdateInterval;
+        let isAutoUpdateActive = true;
+        let currentStock = 'AAPL';
+
+        // Simulação de API (já que APIs reais precisam de chaves)
+        class MockStockAPI {
+            constructor() {
+                this.basePrice = 150;
+                this.trend = 0.001;
+                this.volatility = 0.02;
+            }
+
+            async getStockData(symbol) {
+                // Simula variação realista de preços
+                const change = (Math.random() - 0.5) * this.volatility + this.trend;
+                this.basePrice *= (1 + change);
+                
+                const price = this.basePrice;
+                const volume = Math.floor(Math.random() * 1000000) + 500000;
+                const timestamp = new Date();
+
+                return {
+                    symbol: symbol,
+                    price: price.toFixed(2),
+                    change: change,
+                    volume: volume,
+                    timestamp: timestamp,
+                    high: (price * 1.02).toFixed(2),
+                    low: (price * 0.98).toFixed(2)
+                };
+            }
+        }
+
+        // Agente de IA para análise financeira
+        class FinancialAIAgent {
+            constructor() {
+                this.name = "FinBot";
+                this.analysisHistory = [];
+                this.patterns = {
+                    bullish: ['crescimento', 'alta', 'positivo', 'otimista'],
+                    bearish: ['queda', 'baixa', 'negativo', 'pessimista'],
+                    neutral: ['estável', 'lateral', 'consolidação']
+                };
+            }
+
+            analyzeStock(data, historicalData) {
+                const analysis = {
+                    timestamp: new Date(),
+                    symbol: data.symbol,
+                    trend: this.analyzeTrend(historicalData),
+                    momentum: this.analyzeMomentum(historicalData),
+                    risk: this.assessRisk(historicalData),
+                    recommendation: '',
+                    confidence: 0
+                };
+
+                analysis.recommendation = this.generateRecommendation(analysis);
+                analysis.confidence = this.calculateConfidence(analysis, historicalData);
+
+                this.analysisHistory.push(analysis);
+                return analysis;
+            }
+
+            analyzeTrend(data) {
+                if (data.length < 5) return 'Dados insuficientes';
+
+                const recent = data.slice(-5);
+                const prices = recent.map(d => parseFloat(d.price));
+                const avgRecent = prices.reduce((a, b) => a + b, 0) / prices.length;
+                const avgOlder = data.slice(-10, -5).map(d => parseFloat(d.price))
+                    .reduce((a, b) => a + b, 0) / 5;
+
+                if (avgRecent > avgOlder * 1.02) return 'Tendência de Alta';
+                if (avgRecent < avgOlder * 0.98) return 'Tendência de Baixa';
+                return 'Movimento Lateral';
+            }
+
+            analyzeMomentum(data) {
+                if (data.length < 3) return 'Neutro';
+
+                const last3 = data.slice(-3).map(d => parseFloat(d.price));
+                const momentum = (last3[2] - last3[0]) / last3[0];
+
+                if (momentum > 0.01) return 'Momentum Forte Positivo';
+                if (momentum < -0.01) return 'Momentum Forte Negativo';
+                return 'Momentum Fraco';
+            }
+
+            assessRisk(data) {
+                if (data.length < 10) return 'Risco Médio';
+
+                const prices = data.slice(-10).map(d => parseFloat(d.price));
+                const mean = prices.reduce((a, b) => a + b, 0) / prices.length;
+                const variance = prices.reduce((sum, price) => sum + Math.pow(price - mean, 2), 0) / prices.length;
+                const volatility = Math.sqrt(variance) / mean;
+
+                if (volatility > 0.05) return 'Alto Risco';
+                if (volatility < 0.02) return 'Baixo Risco';
+                return 'Risco Moderado';
+            }
+
+            generateRecommendation(analysis) {
+                const { trend, momentum, risk } = analysis;
+                
+                if (trend.includes('Alta') && momentum.includes('Positivo') && risk !== 'Alto Risco') {
+                    return 'COMPRA - Sinais técnicos favoráveis indicam potencial de valorização.';
+                }
+                
+                if (trend.includes('Baixa') && momentum.includes('Negativo')) {
+                    return 'VENDA - Tendência negativa com momentum desfavorável.';
+                }
+                
+                if (risk === 'Alto Risco') {
+                    return 'CAUTELA - Alta volatilidade detectada. Aguarde sinais mais claros.';
+                }
+                
+                return 'MANTER - Condições neutras. Monitore próximos movimentos.';
+            }
+
+            calculateConfidence(analysis, data) {
+                let confidence = 50; // Base de 50%
+                
+                if (data.length >= 20) confidence += 20;
+                if (analysis.trend !== 'Movimento Lateral') confidence += 15;
+                if (analysis.momentum.includes('Forte')) confidence += 10;
+                if (analysis.risk === 'Baixo Risco') confidence += 5;
+                
+                return Math.min(confidence, 95);
+            }
+
+            formatAnalysis(analysis) {
+                return {
+                    trend: {
+                        title: '📊 Análise de Tendência',
+                        content: `${analysis.trend}. O padrão atual sugere ${analysis.trend.includes('Alta') ? 'continuidade do movimento ascendente' : analysis.trend.includes('Baixa') ? 'pressão vendedora' : 'consolidação lateral'}.`
+                    },
+                    recommendation: {
+                        title: '💡 Recomendação IA',
+                        content: `${analysis.recommendation} Confiança: ${analysis.confidence}%`
+                    },
+                    risk: {
+                        title: '⚠️ Avaliação de Risco',
+                        content: `${analysis.risk} detectado. ${analysis.momentum} observado nos últimos períodos.`
+                    }
+                };
+            }
+        }
+
+        // Inicialização
+        const stockAPI = new MockStockAPI();
+        aiAgent = new FinancialAIAgent();
+
+        // Configuração do gráfico
+        function initChart() {
+            const ctx = document.getElementById('stockChart').getContext('2d');
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Preço',
+                        data: [],
+                        borderColor: 'rgb(75, 192, 192)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            grid: {
+                                color: 'rgba(0,0,0,0.1)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: 'rgba(0,0,0,0.1)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    animation: {
+                        duration: 1000,
+                        easing: 'easeInOutQuart'
+                    }
+                }
+            });
+        }
+
+        // Atualização de dados
+        async function updateStockData() {
+            try {
+                const data = await stockAPI.getStockData(currentStock);
+                stockData.push(data);
+
+                // Manter apenas os últimos 20 pontos
+                if (stockData.length > 20) {
+                    stockData.shift();
+                }
+
+                updateChart(data);
+                updateUI(data);
+                
+                // Análise IA a cada 3 atualizações
+                if (stockData.length % 3 === 0) {
+                    performAIAnalysis();
+                }
+            } catch (error) {
+                console.error('Erro ao atualizar dados:', error);
+            }
+        }
+
+        function updateChart(data) {
+            const time = data.timestamp.toLocaleTimeString();
+            
+            chart.data.labels.push(time);
+            chart.data.datasets[0].data.push(parseFloat(data.price));
+
+            if (chart.data.labels.length > 20) {
+                chart.data.labels.shift();
+                chart.data.datasets[0].data.shift();
+            }
+
+            chart.update('none');
+        }
+
+        function updateUI(data) {
+            document.getElementById('currentPrice').textContent = `$${data.price}`;
+            
+            const changePercent = (data.change * 100).toFixed(2);
+            const changeElement = document.getElementById('priceChange');
+            changeElement.textContent = `${data.change >= 0 ? '+' : ''}${changePercent}%`;
+            changeElement.className = `price-change ${data.change >= 0 ? 'positive' : 'negative'}`;
+        }
+
+        function performAIAnalysis() {
+            if (stockData.length < 5) return;
+
+            const analysis = aiAgent.analyzeStock(stockData[stockData.length - 1], stockData);
+            const formattedAnalysis = aiAgent.formatAnalysis(analysis);
+            
+            displayAIAnalysis(formattedAnalysis);
+            
+            document.getElementById('lastAnalysis').textContent = 
+                new Date().toLocaleTimeString();
+        }
+
+        function displayAIAnalysis(analysis) {
+            const container = document.getElementById('aiAnalysis');
+            container.innerHTML = '';
+
+            Object.entries(analysis).forEach(([key, item]) => {
+                const div = document.createElement('div');
+                div.className = `analysis-item ${key === 'trend' ? 'trend-analysis' : 
+                                                key === 'recommendation' ? 'recommendation' : 'risk-assessment'}`;
+                div.innerHTML = `
+                    <div class="analysis-title">${item.title}</div>
+                    <div class="analysis-text">${item.content}</div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // Controles
+        function toggleAutoUpdate() {
+            isAutoUpdateActive = !isAutoUpdateActive;
+            const button = document.getElementById('autoUpdateText');
+            
+            if (isAutoUpdateActive) {
+                startAutoUpdate();
+                button.textContent = '⏸️ Pausar Auto-Update';
+            } else {
+                clearInterval(autoUpdateInterval);
+                button.textContent = '▶️ Iniciar Auto-Update';
+            }
+        }
+
+        function manualUpdate() {
+            updateStockData();
+        }
+
+        function startAutoUpdate() {
+            clearInterval(autoUpdateInterval);
+            autoUpdateInterval = setInterval(updateStockData, 30000); // 30 segundos
+        }
+
+        // Event listeners
+        document.getElementById('stockSelect').addEventListener('change', (e) => {
+            currentStock = e.target.value;
+            stockData = [];
+            chart.data.labels = [];
+            chart.data.datasets[0].data = [];
+            chart.update();
+            updateStockData();
+        });
+
+        // Inicialização da aplicação
+        window.addEventListener('load', () => {
+            initChart();
+            updateStockData();
+            startAutoUpdate();
+        });
+    </script>
+</body>
+</html>
